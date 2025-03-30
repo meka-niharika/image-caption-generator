@@ -1,10 +1,9 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { search, Image, ArrowDown } from "lucide-react";
+import { Search, Image, ArrowDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateImage } from "@/hooks/use-ai-api";
@@ -62,7 +61,7 @@ const CaptionToImage = () => {
           {/* Left Column - Caption Input */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <search className="h-5 w-5 text-purple" />
+              <Search className="h-5 w-5 text-purple" />
               Enter Your Caption
             </h3>
             
