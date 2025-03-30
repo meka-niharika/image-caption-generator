@@ -2,7 +2,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-// Mock API endpoints for demonstration
+// Updated API endpoints for demonstration
 // In a real application, this would be replaced with actual API calls to your backend
 
 interface GenerateCaptionResponse {
@@ -13,7 +13,7 @@ interface GenerateImageResponse {
   imageUrl: string;
 }
 
-// Sample captions for demonstration
+// More relevant captions for demonstration
 const sampleCaptions = [
   "A beautiful sunset over the mountains with vibrant orange and purple hues.",
   "A cute golden retriever puppy playing with a red ball in a green field.",
@@ -22,36 +22,66 @@ const sampleCaptions = [
   "A serene lake surrounded by pine trees reflecting the clear blue sky."
 ];
 
-// Sample image URLs for demonstration
+// Using more reliable image URLs from Unsplash with direct access
 const sampleImages = [
-  "https://source.unsplash.com/random/800x600/?nature",
-  "https://source.unsplash.com/random/800x600/?city",
-  "https://source.unsplash.com/random/800x600/?people",
-  "https://source.unsplash.com/random/800x600/?technology",
-  "https://source.unsplash.com/random/800x600/?animals"
+  "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?auto=format&fit=crop&w=800&h=600&q=80",
+  "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=800&h=600&q=80",
+  "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&h=600&q=80",
+  "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&h=600&q=80",
+  "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=800&h=600&q=80"
 ];
 
-// Function to simulate API call for generating captions
+// Improved function to simulate API call for generating captions
 const apiGenerateCaption = async (image: File): Promise<GenerateCaptionResponse> => {
-  // In a real app, you would upload the image to the server and get a caption back
-  // This is a mock implementation
   return new Promise((resolve) => {
+    // Simulate analyzing the image and returning a caption
     setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * sampleCaptions.length);
-      resolve({ caption: sampleCaptions[randomIndex] });
-    }, 2000); // Simulate network delay
+      // Get image type to adjust captions
+      const imageType = image.type.split('/')[1];
+      let captionIndex = 0;
+      
+      // Simple logic to pick different captions based on file name
+      // In a real app, this would be replaced by actual image analysis
+      if (image.name.includes("nature") || image.name.includes("landscape")) {
+        captionIndex = 0; // Sunset caption
+      } else if (image.name.includes("dog") || image.name.includes("pet")) {
+        captionIndex = 1; // Dog caption
+      } else if (image.name.includes("kitchen") || image.name.includes("home")) {
+        captionIndex = 2; // Kitchen caption
+      } else if (image.name.includes("city") || image.name.includes("street")) {
+        captionIndex = 3; // City caption
+      } else {
+        captionIndex = 4; // Lake caption
+      }
+      
+      resolve({ caption: sampleCaptions[captionIndex] });
+    }, 1500); // Reduced delay for better UX
   });
 };
 
-// Function to simulate API call for generating images
+// Improved function to simulate API call for generating images
 const apiGenerateImage = async (caption: string): Promise<GenerateImageResponse> => {
-  // In a real app, you would send the caption to the server and get an image URL back
-  // This is a mock implementation
   return new Promise((resolve) => {
     setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * sampleImages.length);
-      resolve({ imageUrl: sampleImages[randomIndex] });
-    }, 3000); // Simulate network delay
+      // Simple logic to map caption keywords to relevant images
+      // In a real app, this would be replaced by actual image generation
+      let imageIndex = 0;
+      const lowerCaption = caption.toLowerCase();
+      
+      if (lowerCaption.includes("sunset") || lowerCaption.includes("mountain")) {
+        imageIndex = 0;
+      } else if (lowerCaption.includes("dog") || lowerCaption.includes("puppy") || lowerCaption.includes("pet")) {
+        imageIndex = 1;
+      } else if (lowerCaption.includes("computer") || lowerCaption.includes("technology")) {
+        imageIndex = 2;
+      } else if (lowerCaption.includes("code") || lowerCaption.includes("programming")) {
+        imageIndex = 3;
+      } else if (lowerCaption.includes("laptop") || lowerCaption.includes("work")) {
+        imageIndex = 4;
+      }
+      
+      resolve({ imageUrl: sampleImages[imageIndex] });
+    }, 2000);
   });
 };
 
