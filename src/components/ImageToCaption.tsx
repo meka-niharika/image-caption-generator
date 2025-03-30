@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Upload, Image, Camera } from "lucide-react";
+import { Upload, Image, Camera, ImagePlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateCaption } from "@/hooks/use-ai-api";
@@ -13,6 +13,7 @@ const ImageToCaption = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropAreaRef = useRef<HTMLDivElement>(null);
@@ -44,26 +45,19 @@ const ImageToCaption = () => {
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (dropAreaRef.current) {
-      dropAreaRef.current.classList.add("drag-over");
-    }
+    setIsDragging(true);
   };
   
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (dropAreaRef.current) {
-      dropAreaRef.current.classList.remove("drag-over");
-    }
+    setIsDragging(false);
   };
   
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (dropAreaRef.current) {
-      dropAreaRef.current.classList.remove("drag-over");
-    }
+    setIsDragging(false);
     
     const file = e.dataTransfer.files?.[0];
     if (file) {
@@ -111,6 +105,10 @@ const ImageToCaption = () => {
     }
   };
   
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+  
   return (
     <Card className="w-full">
       <CardContent className="pt-6">
@@ -127,14 +125,15 @@ const ImageToCaption = () => {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className="relative h-64 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex flex-col items-center justify-center p-6 transition-all file-input-container"
+              onClick={triggerFileInput}
+              className={`relative h-64 border-2 ${isDragging ? 'border-purple' : 'border-dashed border-gray-300 dark:border-gray-700'} rounded-lg flex flex-col items-center justify-center p-6 transition-all cursor-pointer hover:border-purple hover:bg-purple/5`}
             >
               <input
                 type="file"
                 ref={fileInputRef}
                 accept="image/*"
                 onChange={handleFileChange}
-                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                className="hidden"
               />
               
               {previewUrl ? (
@@ -145,9 +144,9 @@ const ImageToCaption = () => {
                 />
               ) : (
                 <div className="text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <ImagePlus className="mx-auto h-12 w-12 text-gray-400" />
                   <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    Drag & drop your image here or click to browse
+                    Click to browse or drag & drop your image here
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                     PNG, JPG, GIF up to 5MB
@@ -158,12 +157,12 @@ const ImageToCaption = () => {
             
             <div className="flex gap-3">
               <Button 
-                onClick={() => fileInputRef.current?.click()} 
+                onClick={triggerFileInput} 
                 variant="outline" 
                 className="w-full"
               >
                 <Upload className="h-4 w-4 mr-2" />
-                Select File
+                Select Image
               </Button>
               
               {previewUrl && (
