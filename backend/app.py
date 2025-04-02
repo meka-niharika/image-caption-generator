@@ -24,11 +24,11 @@ sample_captions = [
 ]
 
 sample_images = [
-    "/static/images/sunset.jpg",
-    "/static/images/dog.jpg",
-    "/static/images/kitchen.jpg",
-    "/static/images/citystreet.jpg",
-    "/static/images/lake.jpg"
+    "/static/images/sunset.jpeg",
+    "/static/images/dog.jpeg",
+    "/static/images/kitchen.jpeg",
+    "/static/images/citystreet.jpeg",
+    "/static/images/lake.jpeg"
 ]
 
 # Ensure the upload directory exists
