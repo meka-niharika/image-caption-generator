@@ -66,7 +66,15 @@ const apiGenerateImage = async (caption: string): Promise<GenerateImageResponse>
       throw new Error(errorMessage);
     }
     
-    return await response.json();
+    // Check if the response is actually JSON before parsing
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return await response.json();
+    } else {
+      const text = await response.text();
+      console.error("Unexpected non-JSON response:", text);
+      throw new Error("Server returned non-JSON data");
+    }
   } catch (error) {
     console.error("Error generating image:", error);
     throw error;

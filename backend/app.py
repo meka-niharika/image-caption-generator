@@ -125,8 +125,14 @@ def generate_caption():
 def generate_image():
     """Generate an image based on a caption using Stable Diffusion"""
     try:
-        data = request.json
+        # Ensure we're getting JSON data
+        if not request.is_json:
+            logger.error("Request does not contain JSON")
+            return jsonify({'error': 'Request must be JSON'}), 400
+            
+        data = request.get_json()
         if not data or 'caption' not in data:
+            logger.error(f"Missing caption in request: {data}")
             return jsonify({'error': 'No caption provided'}), 400
             
         caption = data['caption']
@@ -139,6 +145,7 @@ def generate_image():
             logger.info(f"Generated image URL: {image_url}")
             return jsonify({'imageUrl': image_url})
         else:
+            logger.error("Failed to generate image")
             return jsonify({'error': 'Failed to generate image'}), 500
     except Exception as e:
         logger.error(f"Error in generate_image endpoint: {e}")
