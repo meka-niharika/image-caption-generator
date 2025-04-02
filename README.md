@@ -1,69 +1,76 @@
-# Welcome to your Lovable project
 
-## Project info
+# AI Image & Caption Generator - Python Backend
 
-**URL**: https://lovable.dev/projects/ef14af2c-70ac-4381-8dc9-7f2c77e01a28
+This project is an AI-powered tool that can:
+1. Generate captions from uploaded images
+2. Generate images based on text descriptions
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Upload images to receive AI-generated captions
+- Enter text descriptions to generate matching images
+- Simple and intuitive user interface
+- Python Flask backend API
+- Responsive design for mobile and desktop
 
-**Use Lovable**
+## Technical Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ef14af2c-70ac-4381-8dc9-7f2c77e01a28) and start prompting.
+- **Backend**: Python with Flask
+- **Frontend**: HTML, CSS, and vanilla JavaScript
+- **API Endpoints**:
+  - `/api/generate-caption`: Processes uploaded images and returns captions
+  - `/api/generate-image`: Processes text descriptions and returns image URLs
 
-Changes made via Lovable will be committed automatically to this repo.
+## Setup Instructions
 
-**Use your preferred IDE**
+1. Install Python 3.7+ if you don't have it already
+2. Clone this repository
+3. Navigate to the backend directory
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+cd backend
 ```
 
-**Edit a file directly in GitHub**
+4. Install required dependencies:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+pip install -r requirements.txt
+```
 
-**Use GitHub Codespaces**
+5. Run the application:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+python app.py
+```
 
-## What technologies are used for this project?
+6. Open your browser and navigate to: http://localhost:5000
 
-This project is built with .
+## Project Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+backend/
+├── app.py                 # Flask application and API endpoints
+├── requirements.txt       # Python dependencies
+├── uploads/               # Directory for uploaded images
+└── static/                # Static assets
+    ├── index.html         # Main HTML page
+    ├── css/
+    │   └── styles.css     # CSS styles
+    ├── js/
+    │   └── main.js        # Frontend JavaScript
+    └── images/            # Sample images for demonstration
+        ├── sunset.jpg
+        ├── dog.jpg
+        ├── kitchen.jpg
+        ├── citystreet.jpg
+        └── lake.jpg
+```
 
-## How can I deploy this project?
+## Note on Implementation
 
-Simply open [Lovable](https://lovable.dev/projects/ef14af2c-70ac-4381-8dc9-7f2c77e01a28) and click on Share -> Publish.
+This is a demonstration version that simulates AI image and caption generation. In a production environment, you would integrate with actual AI services like:
+- OpenAI's DALL-E for image generation
+- OpenAI's GPT-4 or Vision API for image captioning
+- Google Cloud Vision API for image analysis
 
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+The current implementation uses sample data and keyword matching to simulate AI functionality.

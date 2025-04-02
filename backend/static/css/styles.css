@@ -1,0 +1,246 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f5f7fa;
+    color: #333;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    font-size: 2rem;
+    background-image: linear-gradient(to right, #6d28d9, #2563eb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 0.5rem;
+}
+
+header p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.tabs {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.tab-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.tab-buttons button {
+    padding: 1rem;
+    border: none;
+    background: #f3f4f6;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.tab-buttons button.active {
+    background: white;
+    color: #6d28d9;
+    border-bottom: 2px solid #6d28d9;
+}
+
+.tab-content {
+    padding: 2rem;
+}
+
+.tab-content > div {
+    display: none;
+}
+
+.tab-content > div.active {
+    display: block;
+}
+
+.card {
+    width: 100%;
+}
+
+.card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #1f2937;
+}
+
+.image-upload, .caption-input {
+    margin-bottom: 1.5rem;
+}
+
+.preview {
+    width: 100%;
+    height: 300px;
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    background-color: #f9fafb;
+    overflow: hidden;
+}
+
+.preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.upload-btn {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #6d28d9;
+    color: white;
+    text-align: center;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.upload-btn:hover {
+    background-color: #5b21b6;
+}
+
+textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    resize: vertical;
+    font-size: 1rem;
+}
+
+.primary-btn {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #6d28d9;
+    color: white;
+    text-align: center;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background-color: #5b21b6;
+}
+
+.primary-btn:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.result {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.result h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    color: #1f2937;
+}
+
+.result-content {
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+}
+
+.result-content p {
+    line-height: 1.6;
+}
+
+.result-content img {
+    max-width: 100%;
+    border-radius: 0.25rem;
+}
+
+.hidden {
+    display: none;
+}
+
+.loading-spinner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #6d28d9;
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 1rem;
+}
+
+.loading-spinner p {
+    color: white;
+    font-size: 1.2rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .tab-content {
+        padding: 1.5rem 1rem;
+    }
+    
+    header h1 {
+        font-size: 1.75rem;
+    }
+}

@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image & Caption Generator</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Image & Caption Generator</h1>
+            <p>Generate captions from images or create images from text with our AI-powered tools</p>
+        </header>
+
+        <div class="tabs">
+            <div class="tab-buttons">
+                <button id="tab-image-to-caption" class="active">Image to Caption</button>
+                <button id="tab-caption-to-image">Caption to Image</button>
+            </div>
+
+            <div class="tab-content">
+                <div id="content-image-to-caption" class="active">
+                    <div class="card">
+                        <h2>Upload an image to generate a caption</h2>
+                        <div class="image-upload">
+                            <div id="image-preview" class="preview"></div>
+                            <label for="file-upload" class="upload-btn">Select Image</label>
+                            <input id="file-upload" type="file" accept="image/*" hidden>
+                        </div>
+                        <button id="generate-caption-btn" class="primary-btn" disabled>Generate Caption</button>
+                        
+                        <div id="caption-result" class="result hidden">
+                            <h3>Generated Caption:</h3>
+                            <div class="result-content">
+                                <p id="caption-text"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-caption-to-image" class="hidden">
+                    <div class="card">
+                        <h2>Enter a caption to generate an image</h2>
+                        <div class="caption-input">
+                            <textarea id="caption-input" placeholder="Enter a detailed description of the image you want to generate..."></textarea>
+                        </div>
+                        <button id="generate-image-btn" class="primary-btn" disabled>Generate Image</button>
+                        
+                        <div id="image-result" class="result hidden">
+                            <h3>Generated Image:</h3>
+                            <div class="result-content">
+                                <img id="result-image" src="" alt="Generated Image">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-spinner" class="loading-spinner hidden">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 AI Image & Caption Generator</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
