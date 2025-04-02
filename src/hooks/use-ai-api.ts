@@ -22,8 +22,17 @@ const apiGenerateCaption = async (image: File): Promise<GenerateCaptionResponse>
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to generate caption");
+      let errorMessage = "Failed to generate caption";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (jsonError) {
+        // If response is not JSON, get text instead
+        const errorText = await response.text();
+        console.error("Non-JSON error response:", errorText);
+        errorMessage = `Server error: ${response.status}`;
+      }
+      throw new Error(errorMessage);
     }
     
     return await response.json();
@@ -44,8 +53,17 @@ const apiGenerateImage = async (caption: string): Promise<GenerateImageResponse>
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to generate image");
+      let errorMessage = "Failed to generate image";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (jsonError) {
+        // If response is not JSON, get text instead
+        const errorText = await response.text();
+        console.error("Non-JSON error response:", errorText);
+        errorMessage = `Server error: ${response.status}`;
+      }
+      throw new Error(errorMessage);
     }
     
     return await response.json();

@@ -97,44 +97,52 @@ def generate_image_with_stable_diffusion(prompt):
 @app.route('/api/generate-caption', methods=['POST'])
 def generate_caption():
     """Generate a caption based on an uploaded image using AI model"""
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image provided'}), 400
+    try:
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image provided'}), 400
+            
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'error': 'No image selected'}), 400
+            
+        # Save the uploaded file
+        filename = werkzeug.utils.secure_filename(file.filename)
+        filepath = os.path.join('uploads', filename)
+        file.save(filepath)
         
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No image selected'}), 400
+        logger.info(f"Image uploaded: {filename}")
         
-    # Save the uploaded file
-    filename = werkzeug.utils.secure_filename(file.filename)
-    filepath = os.path.join('uploads', filename)
-    file.save(filepath)
-    
-    logger.info(f"Image uploaded: {filename}")
-    
-    # Generate caption using BLIP
-    caption = generate_caption_with_blip(filepath)
-    logger.info(f"Generated caption: {caption}")
-    
-    return jsonify({'caption': caption})
+        # Generate caption using BLIP
+        caption = generate_caption_with_blip(filepath)
+        logger.info(f"Generated caption: {caption}")
+        
+        return jsonify({'caption': caption})
+    except Exception as e:
+        logger.error(f"Error in generate_caption endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/generate-image', methods=['POST'])
 def generate_image():
     """Generate an image based on a caption using Stable Diffusion"""
-    data = request.json
-    if not data or 'caption' not in data:
-        return jsonify({'error': 'No caption provided'}), 400
+    try:
+        data = request.json
+        if not data or 'caption' not in data:
+            return jsonify({'error': 'No caption provided'}), 400
+            
+        caption = data['caption']
+        logger.info(f"Caption received: {caption}")
         
-    caption = data['caption']
-    logger.info(f"Caption received: {caption}")
-    
-    # Generate image using Stable Diffusion
-    image_url = generate_image_with_stable_diffusion(caption)
-    
-    if image_url:
-        logger.info(f"Generated image URL: {image_url}")
-        return jsonify({'imageUrl': image_url})
-    else:
-        return jsonify({'error': 'Failed to generate image'}), 500
+        # Generate image using Stable Diffusion
+        image_url = generate_image_with_stable_diffusion(caption)
+        
+        if image_url:
+            logger.info(f"Generated image URL: {image_url}")
+            return jsonify({'imageUrl': image_url})
+        else:
+            return jsonify({'error': 'Failed to generate image'}), 500
+    except Exception as e:
+        logger.error(f"Error in generate_image endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
