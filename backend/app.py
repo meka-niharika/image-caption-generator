@@ -7,14 +7,14 @@ import time
 import werkzeug
 import logging
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Sample data (same as in the original JS code)
+# Sample data
 sample_captions = [
     "A beautiful sunset over the mountains with vibrant orange and purple hues.",
     "A cute golden retriever puppy playing with a red ball in a green field.",
@@ -39,6 +39,10 @@ os.makedirs('static/images', exist_ok=True)
 def index():
     return send_from_directory('static', 'index.html')
 
+@app.route('/static/<path:path>')
+def serve_static(path):
+    return send_from_directory('static', path)
+
 @app.route('/api/generate-caption', methods=['POST'])
 def generate_caption():
     """Generate a caption based on an uploaded image"""
@@ -60,7 +64,6 @@ def generate_caption():
     time.sleep(1.5)
     
     # Simple logic to pick different captions based on file name
-    # In a real app, this would use AI image analysis
     caption_index = 4  # Default to lake caption
     
     if "nature" in filename.lower() or "landscape" in filename.lower():
@@ -91,7 +94,6 @@ def generate_image():
     time.sleep(2)
     
     # Simple logic to map caption keywords to relevant images
-    # In a real app, this would use AI image generation
     image_index = 4  # Default to lake image
     
     lower_caption = caption.lower()
@@ -110,4 +112,4 @@ def generate_image():
     return jsonify({'imageUrl': image_url})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
