@@ -1,5 +1,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Application initialized');
+    
     // Tab switching functionality
     const imageToCaptionTab = document.getElementById('tab-image-to-caption');
     const captionToImageTab = document.getElementById('tab-caption-to-image');
@@ -7,10 +9,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const captionToImageContent = document.getElementById('content-caption-to-image');
     
     imageToCaptionTab.addEventListener('click', function() {
+        console.log('Switching to Image to Caption tab');
         setActiveTab('image-to-caption');
     });
     
     captionToImageTab.addEventListener('click', function() {
+        console.log('Switching to Caption to Image tab');
         setActiveTab('caption-to-image');
     });
     
@@ -49,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.onload = function(event) {
                 imagePreview.innerHTML = `<img src="${event.target.result}" alt="Preview">`;
                 generateCaptionBtn.disabled = false;
+                console.log('Image preview loaded');
             };
             
             reader.readAsDataURL(selectedFile);
@@ -67,10 +72,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingSpinner = document.getElementById('loading-spinner');
     
     function showLoading() {
+        console.log('Showing loading spinner');
         loadingSpinner.classList.remove('hidden');
     }
     
     function hideLoading() {
+        console.log('Hiding loading spinner');
         loadingSpinner.classList.add('hidden');
     }
     
@@ -89,16 +96,18 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('image', selectedFile);
         
         try {
+            console.log('Sending request to generate caption');
             const response = await fetch('/api/generate-caption', {
                 method: 'POST',
                 body: formData
             });
             
             if (!response.ok) {
-                throw new Error('Server error');
+                throw new Error('Server error: ' + response.status);
             }
             
             const data = await response.json();
+            console.log('Caption received:', data.caption);
             
             captionText.textContent = data.caption;
             captionResult.classList.remove('hidden');
@@ -123,6 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
         imageResult.classList.add('hidden');
         
         try {
+            console.log('Sending request to generate image');
             const response = await fetch('/api/generate-image', {
                 method: 'POST',
                 headers: {
@@ -132,15 +142,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (!response.ok) {
-                throw new Error('Server error');
+                throw new Error('Server error: ' + response.status);
             }
             
             const data = await response.json();
+            console.log('Image URL received:', data.imageUrl);
             
             resultImage.src = data.imageUrl;
             resultImage.alt = caption;
             resultImage.onload = function() {
                 imageResult.classList.remove('hidden');
+            };
+            resultImage.onerror = function() {
+                alert('Error loading the generated image.');
+                console.error('Failed to load image from:', data.imageUrl);
             };
         } catch (error) {
             console.error('Error generating image:', error);
@@ -149,4 +164,6 @@ document.addEventListener('DOMContentLoaded', function() {
             hideLoading();
         }
     });
+
+    console.log('All event listeners registered');
 });
