@@ -16,12 +16,23 @@ const queryClient = new QueryClient({
   }
 });
 
+// Get basename from repository name for GitHub Pages
+// This allows the app to work with the correct base URL path
+const getBasename = () => {
+  // If we're in development or not on GitHub Pages, use root path
+  if (process.env.NODE_ENV === 'development') return '/';
+  
+  // Get repository name from URL if on GitHub Pages
+  const repoName = window.location.pathname.split('/')[1];
+  return repoName ? `/${repoName}` : '/';
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner position="top-right" />
-      <BrowserRouter>
+      <BrowserRouter basename={getBasename()}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="*" element={<NotFound />} />
