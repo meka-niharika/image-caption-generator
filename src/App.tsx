@@ -17,14 +17,14 @@ const queryClient = new QueryClient({
 });
 
 // Get basename from repository name for GitHub Pages
-// This allows the app to work with the correct base URL path
 const getBasename = () => {
-  // If we're in development or not on GitHub Pages, use root path
-  if (process.env.NODE_ENV === 'development') return '/';
+  // For production builds (like GitHub Pages), use the repository name
+  if (import.meta.env.PROD) {
+    return '/image-caption-generator'; // Your repository name
+  }
   
-  // Get repository name from URL if on GitHub Pages
-  const repoName = window.location.pathname.split('/')[1];
-  return repoName ? `/${repoName}` : '/';
+  // For local development, use root path
+  return '/';
 };
 
 const App = () => (

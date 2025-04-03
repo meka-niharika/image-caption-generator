@@ -3,11 +3,10 @@
  * Get base URL for API calls based on environment
  */
 export const getApiBaseUrl = (): string => {
-  // When deployed on GitHub Pages, your backend will need to be on a separate domain
-  // If you're hosting the backend on a service like Render, Heroku, etc.
+  // When deployed on GitHub Pages, use your deployed backend URL
   if (import.meta.env.PROD) {
-    // Replace this URL with your deployed backend URL
-    return "https://your-backend-url.com"; // TODO: Change this to your actual deployed backend URL
+    // Replace this URL with your actual deployed backend URL
+    return "https://your-backend-server.com"; // Make sure to update this with your real backend URL
   }
   
   // For local development

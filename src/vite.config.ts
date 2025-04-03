@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  base: mode === 'production' ? './' : '/',  // Use relative paths in production
+  base: mode === 'production' ? '/image-caption-generator/' : '/',  // Set correct repository name for GitHub Pages
   plugins: [
     react(),
     mode === 'development' &&
