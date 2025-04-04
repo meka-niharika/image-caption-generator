@@ -16,23 +16,12 @@ const queryClient = new QueryClient({
   }
 });
 
-// Get basename from repository name for GitHub Pages
-const getBasename = () => {
-  // For production builds (like GitHub Pages), use the repository name
-  if (import.meta.env.PROD) {
-    return '/image-caption-generator'; // Your repository name
-  }
-  
-  // For local development, use root path
-  return '/';
-};
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner position="top-right" />
-      <BrowserRouter basename={getBasename()}>
+      <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="*" element={<NotFound />} />
