@@ -1,14 +1,25 @@
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, getImageUrl } from "@/utils/api";
 
 interface GenerateCaptionResponse {
   caption: string;
+  imageUrl?: string;
+  id?: string;
 }
 
 interface GenerateImageResponse {
   imageUrl: string;
+  id?: string;
+}
+
+interface ImageData {
+  _id: string;
+  image_url: string;
+  caption: string;
+  original_filename: string;
+  created_at: string;
 }
 
 const apiBaseUrl = getApiBaseUrl();
@@ -94,6 +105,21 @@ const apiGenerateImage = async (caption: string): Promise<GenerateImageResponse>
   }
 };
 
+const fetchStoredImages = async (): Promise<ImageData[]> => {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/images`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch images: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching images:", error);
+    throw error;
+  }
+};
+
 // Hook for generating captions
 export const useGenerateCaption = () => {
   return useMutation({
@@ -113,5 +139,14 @@ export const useGenerateImage = () => {
       console.error("Error generating image:", error);
       toast.error(`Failed to generate image: ${error.message || "Unknown error"}`);
     }
+  });
+};
+
+// Hook for retrieving stored images
+export const useStoredImages = () => {
+  return useQuery({
+    queryKey: ['stored-images'],
+    queryFn: fetchStoredImages,
+    staleTime: 60000, // 1 minute
   });
 };

@@ -9,6 +9,16 @@ import io
 import base64
 from PIL import Image
 import json
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+import dotenv
+from datetime import datetime
+
+# Load environment variables
+dotenv.load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app)
@@ -17,7 +27,27 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Ensure directories exist
+# Configure Cloudinary
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+    api_key=os.environ.get('CLOUDINARY_API_KEY', ''),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET', ''),
+    secure=True
+)
+
+# Configure MongoDB
+MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/caption_generator')
+try:
+    mongo_client = MongoClient(MONGO_URI)
+    db = mongo_client['caption_generator']
+    images_collection = db['images']
+    logger.info("Connected to MongoDB successfully")
+except Exception as e:
+    logger.error(f"Error connecting to MongoDB: {e}")
+    # Create a backup in-memory storage if MongoDB fails
+    images_storage = []
+
+# Ensure directories exist for local development/testing
 os.makedirs('uploads', exist_ok=True)
 os.makedirs('static/images', exist_ok=True)
 
@@ -64,6 +94,48 @@ def index():
 def serve_static(path):
     return send_from_directory('static', path)
 
+def upload_to_cloudinary(image_path, public_id=None):
+    """Upload image to Cloudinary and return URL"""
+    try:
+        if not cloudinary.config().cloud_name:
+            logger.warning("Cloudinary not configured, using local storage")
+            return None
+            
+        upload_result = cloudinary.uploader.upload(
+            image_path,
+            public_id=public_id,
+            folder="ai_captions"
+        )
+        return upload_result['secure_url']
+    except Exception as e:
+        logger.error(f"Error uploading to Cloudinary: {e}")
+        return None
+
+def save_to_mongodb(image_url, caption, original_filename):
+    """Save image data to MongoDB"""
+    try:
+        if 'images_collection' not in globals():
+            logger.warning("MongoDB not connected, using in-memory storage")
+            images_storage.append({
+                "image_url": image_url,
+                "caption": caption,
+                "original_filename": original_filename,
+                "created_at": datetime.now()
+            })
+            return None
+            
+        image_data = {
+            "image_url": image_url,
+            "caption": caption,
+            "original_filename": original_filename,
+            "created_at": datetime.now()
+        }
+        result = images_collection.insert_one(image_data)
+        return str(result.inserted_id)
+    except Exception as e:
+        logger.error(f"Error saving to MongoDB: {e}")
+        return None
+
 @app.route('/api/generate-caption', methods=['POST'])
 def generate_caption():
     """Generate a caption by analyzing the uploaded image"""
@@ -74,7 +146,7 @@ def generate_caption():
     if file.filename == '':
         return jsonify({'error': 'No image selected'}), 400
 
-    # Save the uploaded image
+    # Save the uploaded image temporarily
     filename = werkzeug.utils.secure_filename(file.filename)
     filepath = os.path.join('uploads', filename)
     file.save(filepath)
@@ -108,7 +180,23 @@ def generate_caption():
         
         logger.info(f"Using mock caption: {caption}")
 
-    return jsonify({'caption': caption})
+    # Upload image to Cloudinary
+    cloudinary_url = upload_to_cloudinary(filepath)
+    
+    # If Cloudinary upload failed, use base64 as fallback
+    if not cloudinary_url:
+        with open(filepath, "rb") as image_file:
+            img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+            cloudinary_url = f"data:image/png;base64,{img_base64}"
+    
+    # Save to MongoDB
+    db_id = save_to_mongodb(cloudinary_url, caption, filename)
+    
+    return jsonify({
+        'caption': caption,
+        'imageUrl': cloudinary_url,
+        'id': db_id
+    })
 
 @app.route('/api/generate-image', methods=['POST'])
 def generate_image():
@@ -126,11 +214,23 @@ def generate_image():
             # Generate image using Stable Diffusion
             generated_image = text_to_image_model(caption).images[0]
             
-            # Save and convert to Base64 for frontend
-            img_io = io.BytesIO()
-            generated_image.save(img_io, format="PNG")
-            img_io.seek(0)
-            img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+            # Save temporarily
+            temp_path = os.path.join('uploads', f"generated_{int(time.time())}.png")
+            generated_image.save(temp_path, format="PNG")
+            
+            # Upload to Cloudinary
+            cloudinary_url = upload_to_cloudinary(temp_path)
+            
+            # If Cloudinary upload failed, use base64 as fallback
+            if not cloudinary_url:
+                img_io = io.BytesIO()
+                generated_image.save(img_io, format="PNG")
+                img_io.seek(0)
+                img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+                cloudinary_url = f"data:image/png;base64,{img_base64}"
+            
+            # Save to MongoDB
+            db_id = save_to_mongodb(cloudinary_url, caption, "AI-generated")
             
             logger.info("Generated image successfully.")
         except Exception as e:
@@ -138,8 +238,12 @@ def generate_image():
             # Fallback to a sample image
             sample_path = os.path.join('static/images', 'sunset.jpeg')
             if os.path.exists(sample_path):
-                with open(sample_path, "rb") as image_file:
-                    img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+                cloudinary_url = upload_to_cloudinary(sample_path)
+                if not cloudinary_url:
+                    with open(sample_path, "rb") as image_file:
+                        img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+                        cloudinary_url = f"data:image/png;base64,{img_base64}"
+                db_id = save_to_mongodb(cloudinary_url, caption, "fallback-sunset")
             else:
                 return jsonify({'error': 'Could not generate image and no fallback available'}), 500
     else:
@@ -156,12 +260,40 @@ def generate_image():
             image_name = 'lake.jpeg'
             
         sample_path = os.path.join('static/images', image_name)
-        with open(sample_path, "rb") as image_file:
-            img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+        cloudinary_url = upload_to_cloudinary(sample_path)
+        if not cloudinary_url:
+            with open(sample_path, "rb") as image_file:
+                img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+                cloudinary_url = f"data:image/png;base64,{img_base64}"
         
+        db_id = save_to_mongodb(cloudinary_url, caption, f"sample-{image_name}")
         logger.info(f"Using sample image: {image_name}")
 
-    return jsonify({'imageUrl': f"data:image/png;base64,{img_base64}"})
+    return jsonify({
+        'imageUrl': cloudinary_url,
+        'id': db_id
+    })
+
+@app.route('/api/images', methods=['GET'])
+def get_images():
+    """Get all images from MongoDB"""
+    try:
+        if 'images_collection' not in globals():
+            # Return in-memory storage if MongoDB not connected
+            return jsonify([{
+                'id': idx,
+                **img
+            } for idx, img in enumerate(images_storage)])
+            
+        images = list(images_collection.find().sort('created_at', -1))
+        # Convert ObjectId to string
+        for img in images:
+            img['_id'] = str(img['_id'])
+        
+        return jsonify(images)
+    except Exception as e:
+        logger.error(f"Error fetching images: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000
