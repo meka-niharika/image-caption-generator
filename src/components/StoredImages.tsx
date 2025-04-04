@@ -1,119 +1,71 @@
-
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { useStoredImages } from "@/hooks/use-ai-api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { getImageUrl } from "@/utils/api";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { Gallery, Import, ImageIcon } from "lucide-react";
-import { motion } from "framer-motion";
-import { format } from "date-fns";
+import { Image, ImageIcon } from "lucide-react"; // Changed from Gallery to Image and ImageIcon
 
 const StoredImages = () => {
-  const { data: images, isLoading, error } = useStoredImages();
+  const { data: images, isLoading, isError, error } = useStoredImages();
+  const [selectedImage, setSelectedImage] = useState<{ url: string; caption: string } | null>(null);
 
-  if (isLoading) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gallery className="h-5 w-5 text-purple" />
-            Saved Images
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex justify-center">
-          <LoadingSpinner text="Loading saved images..." />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gallery className="h-5 w-5 text-purple" />
-            Saved Images
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center text-destructive">
-            Error loading saved images: {error.message}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!images || images.length === 0) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gallery className="h-5 w-5 text-purple" />
-            Saved Images
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Import className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-lg font-medium mb-2">No saved images yet</p>
-            <p className="text-gray-500">Images you generate will appear here</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleImageClick = (imageUrl: string, caption: string) => {
+    setSelectedImage({ url: imageUrl, caption: caption });
+  };
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Gallery className="h-5 w-5 text-purple" />
-          Saved Images ({images.length})
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {images.map((image, index) => (
-            <motion.div
-              key={image._id || index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="overflow-hidden rounded-lg border bg-card shadow"
-            >
-              <div className="aspect-square relative overflow-hidden">
-                {image.image_url.startsWith('data:image') ? (
-                  <img 
-                    src={image.image_url} 
-                    alt={image.caption} 
-                    className="h-full w-full object-cover transition-transform hover:scale-105"
-                  />
-                ) : image.image_url.startsWith('http') ? (
-                  <img 
-                    src={image.image_url} 
-                    alt={image.caption} 
-                    className="h-full w-full object-cover transition-transform hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <ImageIcon className="h-16 w-16 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <p className="mb-2 line-clamp-2 font-medium">"{image.caption}"</p>
-                <div className="flex items-center text-xs text-gray-500">
-                  <span>
-                    {image.created_at 
-                      ? format(new Date(image.created_at), 'MMM d, yyyy')
-                      : 'Unknown date'}
-                  </span>
+      <CardContent className="pt-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <ImageIcon className="h-5 w-5 text-purple" />
+          Saved Images
+        </h2>
+        
+        {isLoading ? (
+          <div className="flex justify-center">
+            <LoadingSpinner text="Loading saved images..." />
+          </div>
+        ) : isError ? (
+          <div className="text-red-500">Error: {error.message}</div>
+        ) : images && images.length > 0 ? (
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {images.map((image) => (
+              <div
+                key={image._id}
+                className="relative cursor-pointer rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+                onClick={() => handleImageClick(getImageUrl(image.image_url), image.caption)}
+              >
+                <Image
+                  src={getImageUrl(image.image_url)}
+                  alt={image.original_filename || "Generated Image"}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="absolute bottom-0 left-0 w-full bg-black/60 text-white p-2 text-sm">
+                  {image.caption.length > 50 ? `${image.caption.substring(0, 50)}...` : image.caption}
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-gray-500 dark:text-gray-400">No images saved yet. Generate some images and they will appear here.</div>
+        )}
+
+        {/* Modal or Display for Selected Image */}
+        {selectedImage && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-2xl max-h-screen overflow-auto">
+              <img src={selectedImage.url} alt="Full Size" className="w-full rounded-md mb-4" />
+              <p className="text-lg font-semibold mb-2">Caption:</p>
+              <p className="text-gray-700 dark:text-gray-300">{selectedImage.caption}</p>
+              <button
+                className="mt-4 bg-purple text-white rounded-md px-4 py-2 hover:bg-purple-dark"
+                onClick={() => setSelectedImage(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
