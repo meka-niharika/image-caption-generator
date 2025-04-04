@@ -3,14 +3,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useStoredImages } from "@/hooks/use-ai-api";
 import { getImageUrl } from "@/utils/api";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { Image, ImageIcon } from "lucide-react"; // Changed from Gallery to Image and ImageIcon
+import { ImageIcon } from "lucide-react"; // Removed `Image` import
 
 const StoredImages = () => {
   const { data: images, isLoading, isError, error } = useStoredImages();
   const [selectedImage, setSelectedImage] = useState<{ url: string; caption: string } | null>(null);
 
   const handleImageClick = (imageUrl: string, caption: string) => {
-    setSelectedImage({ url: imageUrl, caption: caption });
+    setSelectedImage({ url: imageUrl, caption });
   };
 
   return (
@@ -20,7 +20,7 @@ const StoredImages = () => {
           <ImageIcon className="h-5 w-5 text-purple" />
           Saved Images
         </h2>
-        
+
         {isLoading ? (
           <div className="flex justify-center">
             <LoadingSpinner text="Loading saved images..." />
@@ -35,7 +35,7 @@ const StoredImages = () => {
                 className="relative cursor-pointer rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
                 onClick={() => handleImageClick(getImageUrl(image.image_url), image.caption)}
               >
-                <Image
+                <img
                   src={getImageUrl(image.image_url)}
                   alt={image.original_filename || "Generated Image"}
                   className="w-full h-48 object-cover"
@@ -47,10 +47,11 @@ const StoredImages = () => {
             ))}
           </div>
         ) : (
-          <div className="text-gray-500 dark:text-gray-400">No images saved yet. Generate some images and they will appear here.</div>
+          <div className="text-gray-500 dark:text-gray-400">
+            No images saved yet. Generate some images and they will appear here.
+          </div>
         )}
 
-        {/* Modal or Display for Selected Image */}
         {selectedImage && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-2xl max-h-screen overflow-auto">
