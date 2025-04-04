@@ -1,0 +1,2 @@
+
+web: LOAD_AI_MODELS=false python app.py

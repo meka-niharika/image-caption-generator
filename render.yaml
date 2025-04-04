@@ -1,0 +1,13 @@
+
+services:
+  - type: web
+    name: ai-image-caption
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && LOAD_AI_MODELS=false python app.py
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: LOAD_AI_MODELS
+        value: false
+    plan: free
