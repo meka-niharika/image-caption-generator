@@ -12,5 +12,5 @@ huggingface-hub>=0.26.0,<1.0
 pymongo==4.11.3
 cloudinary==1.43.0
 python-dotenv==1.1.0
-dotenv==0.9.9
 dnspython==2.7.0
+gunicorn

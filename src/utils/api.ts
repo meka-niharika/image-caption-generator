@@ -4,7 +4,7 @@
  */
 export const getApiBaseUrl = (): string => {
   // When deployed on platforms like PythonAnywhere, use your deployed backend URL
-  if (import.meta.env.PROD) {
+  if ((import.meta as any).env.PROD) {
     // Replace this with your actual PythonAnywhere URL when deployed
     // For example: "https://yourusername.pythonanywhere.com"
     return ""; // Leave empty to use relative URLs which will work if frontend and backend are on same domain

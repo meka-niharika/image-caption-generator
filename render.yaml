@@ -1,13 +1,21 @@
 
 services:
   - type: web
-    name: ai-image-caption
+    name: image-caption-backend
     env: python
+    plan: free
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && LOAD_AI_MODELS=false python app.py
+    startCommand: gunicorn app:app
     envVars:
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dgaqql4ft
+      - key: CLOUDINARY_API_KEY
+        value: 922694875974173
+      - key: CLOUDINARY_API_SECRET
+        value: FXeVCwR7aP5ILnowx0JsxZOxvAQ
+      - key: MONGO_URI
+        value: mongodb+srv://niharikameka4:Niha%402004@cluster0.60rzb.mongodb.net/caption_generator
       - key: PORT
         value: 10000
       - key: LOAD_AI_MODELS
-        value: false
-    plan: free
+        value: true
