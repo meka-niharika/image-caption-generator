@@ -48,7 +48,7 @@ except Exception as e:
     images_storage = []
 
 # Ensure directories exist for local development/testing
-os.makedirs('uploads', exist_ok=True)
+# os.makedirs('uploads', exist_ok=True)
 os.makedirs('static/images', exist_ok=True)
 
 # Check if we should load the models based on environment
@@ -146,52 +146,52 @@ def generate_caption():
     if file.filename == '':
         return jsonify({'error': 'No image selected'}), 400
 
-    # Save the uploaded image temporarily
     filename = werkzeug.utils.secure_filename(file.filename)
-    filepath = os.path.join('uploads', filename)
-    file.save(filepath)
-
     logger.info(f"Image uploaded: {filename}")
 
-    # If AI models are loaded, use them to generate caption
+    # Upload directly to Cloudinary from memory (stream)
+    try:
+        cloudinary_upload = cloudinary.uploader.upload(
+            file,
+            public_id=filename,
+            folder="ai_captions"
+        )
+        cloudinary_url = cloudinary_upload['secure_url']
+    except Exception as e:
+        logger.error(f"Error uploading to Cloudinary: {e}")
+        return jsonify({'error': 'Failed to upload to Cloudinary'}), 500
+
+    # Reset stream pointer for further use
+    file.stream.seek(0)
+
+    # Load image from stream for AI captioning
+    try:
+        image = Image.open(file.stream).convert("RGB")
+    except Exception as e:
+        logger.error(f"Error loading image: {e}")
+        return jsonify({'error': 'Invalid image file'}), 400
+
+    # Generate caption
     if LOAD_AI_MODELS:
         try:
-            # Load the image
-            image = Image.open(filepath).convert("RGB")
-            
-            # Generate caption using BLIP
             inputs = caption_processor(image, return_tensors="pt")
             output = caption_model.generate(**inputs)
             caption = caption_processor.decode(output[0], skip_special_tokens=True)
-            
             logger.info(f"Generated caption: {caption}")
         except Exception as e:
             logger.error(f"Error generating caption: {e}")
-            # Fallback to mock caption
             caption = sample_captions.get("default")
     else:
-        # Use mock response if models not loaded
-        for key in sample_captions:
-            if key in filename.lower():
-                caption = sample_captions[key]
-                break
-        else:
-            caption = sample_captions["default"]
-        
+        # Use sample caption based on filename
+        caption = next(
+            (sample_captions[key] for key in sample_captions if key in filename.lower()),
+            sample_captions["default"]
+        )
         logger.info(f"Using mock caption: {caption}")
 
-    # Upload image to Cloudinary
-    cloudinary_url = upload_to_cloudinary(filepath)
-    
-    # If Cloudinary upload failed, use base64 as fallback
-    if not cloudinary_url:
-        with open(filepath, "rb") as image_file:
-            img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-            cloudinary_url = f"data:image/png;base64,{img_base64}"
-    
     # Save to MongoDB
     db_id = save_to_mongodb(cloudinary_url, caption, filename)
-    
+
     return jsonify({
         'caption': caption,
         'imageUrl': cloudinary_url,
