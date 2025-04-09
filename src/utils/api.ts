@@ -14,13 +14,32 @@ export const getApiBaseUrl = (): string => {
   return "";
 };
 
-// Image URL helper to handle Cloudinary URLs or base64 images
-export const getImageUrl = (imageData: string): string => {
+// Image/Video URL helper to handle Cloudinary URLs or base64 images/videos
+export const getMediaUrl = (mediaData: string): string => {
   // If it's already a full URL (Cloudinary), return as is
-  if (imageData.startsWith('http')) {
-    return imageData;
+  if (mediaData.startsWith('http')) {
+    return mediaData;
   }
   
   // For base64 data
-  return imageData;
+  return mediaData;
+};
+
+// Get media type (image or video)
+export const getMediaType = (file: File): 'image' | 'video' | null => {
+  if (file.type.startsWith('image/')) {
+    return 'image';
+  } else if (file.type.startsWith('video/')) {
+    return 'video';
+  }
+  return null;
+};
+
+// Format file size for display
+export const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };

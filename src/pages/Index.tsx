@@ -1,10 +1,9 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 import ImageToCaption from "@/components/ImageToCaption";
 import CaptionToImage from "@/components/CaptionToImage";
-import StoredImages from "@/components/StoredImages";
+import VideoToCaption from "@/components/VideoToCaption";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -22,10 +21,10 @@ const Index = () => {
       <main className="flex-1 container py-8 px-4 md:px-6 space-y-8">
         <div className="text-center space-y-3 max-w-3xl mx-auto mb-8">
           <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple to-aiblue-dark">
-            AI Image & Caption Generator
+            AI Media Generator
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Generate captions from images or create images from text with our AI-powered tools
+            Generate captions from images/videos or create media from text with our AI-powered tools
           </p>
         </div>
 
@@ -39,11 +38,11 @@ const Index = () => {
             <TabsTrigger value="image-to-caption" className="text-base py-3">
               Image to Caption
             </TabsTrigger>
-            <TabsTrigger value="caption-to-image" className="text-base py-3">
-              Caption to Image
+            <TabsTrigger value="video-to-caption" className="text-base py-3">
+              Video to Caption
             </TabsTrigger>
-            <TabsTrigger value="stored-images" className="text-base py-3">
-              Saved Images
+            <TabsTrigger value="caption-to-image" className="text-base py-3">
+              Caption to Media
             </TabsTrigger>
           </TabsList>
 
@@ -51,12 +50,12 @@ const Index = () => {
             <ImageToCaption />
           </TabsContent>
 
-          <TabsContent value="caption-to-image">
-            <CaptionToImage />
+          <TabsContent value="video-to-caption">
+            <VideoToCaption />
           </TabsContent>
           
-          <TabsContent value="stored-images">
-            <StoredImages />
+          <TabsContent value="caption-to-image">
+            <CaptionToImage />
           </TabsContent>
         </Tabs>
       </main>

@@ -14,3 +14,5 @@ cloudinary==1.43.0
 python-dotenv==1.1.0
 dnspython==2.7.0
 gunicorn
+moviepy==1.0.3
+opencv-python-headless==4.8.1.78

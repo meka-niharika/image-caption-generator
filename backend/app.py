@@ -41,15 +41,16 @@ try:
     mongo_client = MongoClient(MONGO_URI)
     db = mongo_client['caption_generator']
     images_collection = db['images']
+    videos_collection = db['videos']
     logger.info("Connected to MongoDB successfully")
 except Exception as e:
     logger.error(f"Error connecting to MongoDB: {e}")
     # Create a backup in-memory storage if MongoDB fails
-    images_storage = []
+    media_storage = []
 
 # Ensure directories exist for local development/testing
-# os.makedirs('uploads', exist_ok=True)
 os.makedirs('static/images', exist_ok=True)
+os.makedirs('static/videos', exist_ok=True)
 
 # Check if we should load the models based on environment
 LOAD_AI_MODELS = os.environ.get('LOAD_AI_MODELS', 'true').lower() == 'true'
@@ -64,16 +65,38 @@ sample_captions = {
     "default": "an interesting image that shows various details"
 }
 
+sample_video_captions = {
+    "dog": "A playful dog running through a field of grass, chasing a ball.",
+    "beach": "Waves crashing on a sandy beach with a beautiful sunset in the background.",
+    "city": "A time-lapse of a busy city street showing cars and pedestrians moving through the frame.",
+    "cooking": "A person preparing a meal in a kitchen, chopping vegetables and stirring a pot.",
+    "nature": "A serene forest scene with birds flying between trees and sunlight filtering through leaves.",
+    "default": "A video showing various scenes with interesting visuals and movement."
+}
+
+sample_video_summaries = {
+    "dog": "This video features a dog playing outdoors. The dog shows enthusiasm and energy as it moves around in a natural setting.",
+    "beach": "The video depicts a coastal scene with rhythmic waves and warm sunset colors creating a peaceful atmosphere.",
+    "city": "This time-lapse captures urban life with constant movement of traffic and pedestrians, showing the bustling energy of city living.",
+    "cooking": "The footage shows a cooking process from preparation to completion, demonstrating culinary techniques and food transformation.",
+    "nature": "A tranquil natural setting is captured in this video, highlighting the interactions between wildlife and environment.",
+    "default": "This video contains a sequence of scenes that demonstrate movement and visual interest across different contexts."
+}
+
 # Only load AI models if we're not in a memory-constrained environment
 if LOAD_AI_MODELS:
     logger.info("Loading models... This may take time.")
     try:
         import torch
-        from transformers import BlipProcessor, BlipForConditionalGeneration
+        from transformers import BlipProcessor, BlipForConditionalGeneration, AutoTokenizer, AutoModelForSeq2SeqLM
         from diffusers import StableDiffusionPipeline
         
         caption_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large", use_fast=False)
         caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
+        
+        # Model for summarization
+        summarizer_tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large-cnn")
+        summarizer_model = AutoModelForSeq2SeqLM.from_pretrained("facebook/bart-large-cnn")
         
         text_to_image_model = StableDiffusionPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5", torch_dtype=torch.float32
@@ -94,43 +117,51 @@ def index():
 def serve_static(path):
     return send_from_directory('static', path)
 
-def upload_to_cloudinary(image_path, public_id=None):
-    """Upload image to Cloudinary and return URL"""
+def upload_to_cloudinary(file_path, resource_type="image", public_id=None):
+    """Upload media to Cloudinary and return URL"""
     try:
         if not cloudinary.config().cloud_name:
             logger.warning("Cloudinary not configured, using local storage")
             return None
             
         upload_result = cloudinary.uploader.upload(
-            image_path,
+            file_path,
+            resource_type=resource_type,
             public_id=public_id,
-            folder="ai_captions"
+            folder="ai_media"
         )
         return upload_result['secure_url']
     except Exception as e:
         logger.error(f"Error uploading to Cloudinary: {e}")
         return None
 
-def save_to_mongodb(image_url, caption, original_filename):
-    """Save image data to MongoDB"""
+def save_to_mongodb(collection, media_url, caption, original_filename, media_type="image", summary=None):
+    """Save media data to MongoDB"""
     try:
-        if 'images_collection' not in globals():
+        if 'images_collection' not in globals() and 'videos_collection' not in globals():
             logger.warning("MongoDB not connected, using in-memory storage")
-            images_storage.append({
-                "image_url": image_url,
+            media_storage.append({
+                "media_url": media_url,
                 "caption": caption,
                 "original_filename": original_filename,
+                "media_type": media_type,
+                "summary": summary,
                 "created_at": datetime.now()
             })
             return None
             
-        image_data = {
-            "image_url": image_url,
+        media_data = {
+            "media_url": media_url,
             "caption": caption,
             "original_filename": original_filename,
+            "media_type": media_type,
             "created_at": datetime.now()
         }
-        result = images_collection.insert_one(image_data)
+        
+        if summary:
+            media_data["summary"] = summary
+            
+        result = collection.insert_one(media_data)
         return str(result.inserted_id)
     except Exception as e:
         logger.error(f"Error saving to MongoDB: {e}")
@@ -154,7 +185,7 @@ def generate_caption():
         cloudinary_upload = cloudinary.uploader.upload(
             file,
             public_id=filename,
-            folder="ai_captions"
+            folder="ai_media"
         )
         cloudinary_url = cloudinary_upload['secure_url']
     except Exception as e:
@@ -190,11 +221,76 @@ def generate_caption():
         logger.info(f"Using mock caption: {caption}")
 
     # Save to MongoDB
-    db_id = save_to_mongodb(cloudinary_url, caption, filename)
+    db_id = save_to_mongodb(images_collection, cloudinary_url, caption, filename, "image")
 
     return jsonify({
         'caption': caption,
         'imageUrl': cloudinary_url,
+        'id': db_id
+    })
+
+@app.route('/api/generate-video-caption', methods=['POST'])
+def generate_video_caption():
+    """Generate a caption and summary from an uploaded video"""
+    if 'video' not in request.files:
+        return jsonify({'error': 'No video provided'}), 400
+
+    file = request.files['video']
+    if file.filename == '':
+        return jsonify({'error': 'No video selected'}), 400
+
+    filename = werkzeug.utils.secure_filename(file.filename)
+    logger.info(f"Video uploaded: {filename}")
+
+    # Upload directly to Cloudinary from memory (stream)
+    try:
+        cloudinary_upload = cloudinary.uploader.upload(
+            file,
+            resource_type="video",
+            public_id=filename,
+            folder="ai_media"
+        )
+        cloudinary_url = cloudinary_upload['secure_url']
+    except Exception as e:
+        logger.error(f"Error uploading to Cloudinary: {e}")
+        return jsonify({'error': 'Failed to upload to Cloudinary'}), 500
+
+    # For now, we'll use mock captions since video analysis requires additional ML models
+    # In a production system, we'd extract frames and run them through the caption model,
+    # then synthesize a full caption and summary
+    
+    # Generate mock caption based on filename
+    caption = next(
+        (sample_video_captions[key] for key in sample_video_captions if key in filename.lower()),
+        sample_video_captions["default"]
+    )
+    
+    # Generate mock summary based on filename
+    summary = next(
+        (sample_video_summaries[key] for key in sample_video_summaries if key in filename.lower()),
+        sample_video_summaries["default"]
+    )
+    
+    logger.info(f"Using mock video caption: {caption}")
+    logger.info(f"Using mock video summary: {summary}")
+    
+    # Save to MongoDB
+    db_id = save_to_mongodb(videos_collection, cloudinary_url, caption, filename, "video", summary)
+    
+    # For demo purposes, return a mock animated video URL too (in real implementation this would be another API call)
+    animated_video_url = None
+    if 'dog' in filename.lower():
+        animated_video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713459800/ai_media/animated_dog_ghibli_pkb2qx.mp4"
+    elif 'beach' in filename.lower() or 'ocean' in filename.lower() or 'sea' in filename.lower():
+        animated_video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713459801/ai_media/animated_beach_ghibli_v3tjdf.mp4"
+    elif 'city' in filename.lower() or 'street' in filename.lower():
+        animated_video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713459801/ai_media/animated_city_ghibli_azxyhr.mp4"
+
+    return jsonify({
+        'caption': caption,
+        'summary': summary,
+        'videoUrl': cloudinary_url,
+        'animatedVideoUrl': animated_video_url,
         'id': db_id
     })
 
@@ -230,7 +326,7 @@ def generate_image():
                 cloudinary_url = f"data:image/png;base64,{img_base64}"
             
             # Save to MongoDB
-            db_id = save_to_mongodb(cloudinary_url, caption, "AI-generated")
+            db_id = save_to_mongodb(images_collection, cloudinary_url, caption, "AI-generated", "image")
             
             logger.info("Generated image successfully.")
         except Exception as e:
@@ -243,7 +339,7 @@ def generate_image():
                     with open(sample_path, "rb") as image_file:
                         img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
                         cloudinary_url = f"data:image/png;base64,{img_base64}"
-                db_id = save_to_mongodb(cloudinary_url, caption, "fallback-sunset")
+                db_id = save_to_mongodb(images_collection, cloudinary_url, caption, "fallback-sunset", "image")
             else:
                 return jsonify({'error': 'Could not generate image and no fallback available'}), 500
     else:
@@ -266,7 +362,7 @@ def generate_image():
                 img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
                 cloudinary_url = f"data:image/png;base64,{img_base64}"
         
-        db_id = save_to_mongodb(cloudinary_url, caption, f"sample-{image_name}")
+        db_id = save_to_mongodb(images_collection, cloudinary_url, caption, f"sample-{image_name}", "image")
         logger.info(f"Using sample image: {image_name}")
 
     return jsonify({
@@ -274,26 +370,53 @@ def generate_image():
         'id': db_id
     })
 
-@app.route('/api/images', methods=['GET'])
-def get_images():
-    """Get all images from MongoDB"""
-    try:
-        if 'images_collection' not in globals():
-            # Return in-memory storage if MongoDB not connected
-            return jsonify([{
-                'id': idx,
-                **img
-            } for idx, img in enumerate(images_storage)])
-            
-        images = list(images_collection.find().sort('created_at', -1))
-        # Convert ObjectId to string
-        for img in images:
-            img['_id'] = str(img['_id'])
-        
-        return jsonify(images)
-    except Exception as e:
-        logger.error(f"Error fetching images: {e}")
-        return jsonify({'error': str(e)}), 500
+@app.route('/api/generate-animated-video', methods=['POST'])
+def generate_animated_video():
+    """Generate an animated video based on a caption and style"""
+    data = request.json
+    if not data or 'caption' not in data:
+        return jsonify({'error': 'No caption provided'}), 400
+
+    caption = data['caption']
+    style = data.get('style', 'ghibli')
+    
+    logger.info(f"Animation request: Caption={caption}, Style={style}")
+    
+    # For now, we'll return sample videos since video generation is complex
+    # In a real implementation, this would call a video generation API
+    
+    # Choose sample video based on keywords in caption and style
+    video_url = None
+    
+    if style == 'ghibli':
+        if 'dog' in caption.lower() or 'animal' in caption.lower() or 'pet' in caption.lower():
+            video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713459800/ai_media/animated_dog_ghibli_pkb2qx.mp4"
+        elif 'beach' in caption.lower() or 'ocean' in caption.lower() or 'sea' in caption.lower() or 'water' in caption.lower():
+            video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713459801/ai_media/animated_beach_ghibli_v3tjdf.mp4"
+        elif 'city' in caption.lower() or 'urban' in caption.lower() or 'street' in caption.lower() or 'building' in caption.lower():
+            video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713459801/ai_media/animated_city_ghibli_azxyhr.mp4"
+        else:
+            # Default ghibli animation
+            video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713459801/ai_media/animated_nature_ghibli_s6cekv.mp4"
+    elif style == 'pixar':
+        video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713460080/ai_media/animated_pixar_style_qzxcmv.mp4"
+    elif style == 'anime':
+        video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713460080/ai_media/animated_anime_style_bq8vpd.mp4"
+    elif style == 'watercolor':
+        video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713460081/ai_media/animated_watercolor_style_ooq0gi.mp4"
+    elif style == '3d':
+        video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713460080/ai_media/animated_3d_style_r0lmvg.mp4"
+    else:
+        # Default fallback
+        video_url = "https://res.cloudinary.com/dgaqql4ft/video/upload/v1713459801/ai_media/animated_nature_ghibli_s6cekv.mp4"
+    
+    # Save to MongoDB
+    db_id = save_to_mongodb(videos_collection, video_url, caption, f"animated-{style}", "video")
+    
+    return jsonify({
+        'videoUrl': video_url,
+        'id': db_id
+    })
 
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000
