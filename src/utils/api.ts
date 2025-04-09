@@ -48,3 +48,46 @@ export const formatFileSize = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
+
+// Helper to safely parse API responses
+export const parseApiResponse = async (response: Response) => {
+  const contentType = response.headers.get("content-type");
+  
+  if (!response.ok) {
+    let errorMessage = `Server error: ${response.status}`;
+    if (contentType && contentType.includes("application/json")) {
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        console.error("Failed to parse error JSON:", e);
+      }
+    } else {
+      // If response is not JSON, try to get the text
+      try {
+        const errorText = await response.text();
+        console.error("Non-JSON error response:", errorText);
+        if (errorText && errorText.length < 100) {
+          errorMessage = `Server error: ${errorText}`;
+        }
+      } catch (e) {
+        console.error("Failed to get error text:", e);
+      }
+    }
+    throw new Error(errorMessage);
+  }
+  
+  // For successful responses
+  if (contentType && contentType.includes("application/json")) {
+    try {
+      return await response.json();
+    } catch (e) {
+      console.error("Failed to parse JSON from successful response:", e);
+      throw new Error("Server returned invalid JSON data");
+    }
+  } else {
+    const text = await response.text();
+    console.error("Unexpected non-JSON response:", text);
+    throw new Error("Server returned non-JSON data");
+  }
+};
