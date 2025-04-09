@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
@@ -52,8 +51,8 @@ except Exception as e:
 os.makedirs('static/images', exist_ok=True)
 os.makedirs('static/videos', exist_ok=True)
 
-# Check if we should load the models based on environment
-LOAD_AI_MODELS = os.environ.get('LOAD_AI_MODELS', 'true').lower() == 'true'
+# Check if we should load the models based on environment - FORCE TO TRUE
+LOAD_AI_MODELS = True  # Changed from environment variable to force loading models
 
 # Create mock responses for environments with memory constraints
 sample_captions = {
@@ -180,19 +179,7 @@ def generate_caption():
     filename = werkzeug.utils.secure_filename(file.filename)
     logger.info(f"Image uploaded: {filename}")
 
-    # Upload directly to Cloudinary from memory (stream)
-    try:
-        cloudinary_upload = cloudinary.uploader.upload(
-            file,
-            public_id=filename,
-            folder="ai_media"
-        )
-        cloudinary_url = cloudinary_upload['secure_url']
-    except Exception as e:
-        logger.error(f"Error uploading to Cloudinary: {e}")
-        return jsonify({'error': 'Failed to upload to Cloudinary'}), 500
-
-    # Reset stream pointer for further use
+    # Reset stream pointer for AI captioning
     file.stream.seek(0)
 
     # Load image from stream for AI captioning
@@ -205,12 +192,22 @@ def generate_caption():
     # Generate caption
     if LOAD_AI_MODELS:
         try:
-            inputs = caption_processor(image, return_tensors="pt")
-            output = caption_model.generate(**inputs)
-            caption = caption_processor.decode(output[0], skip_special_tokens=True)
-            logger.info(f"Generated caption: {caption}")
+            # Try generating with AI models if available
+            try:
+                inputs = caption_processor(image, return_tensors="pt")
+                output = caption_model.generate(**inputs)
+                caption = caption_processor.decode(output[0], skip_special_tokens=True)
+                logger.info(f"Generated caption: {caption}")
+            except Exception as e:
+                logger.error(f"Error generating caption with AI model: {e}")
+                # Fallback to simpler caption based on filename
+                caption = next(
+                    (sample_captions[key] for key in sample_captions if key in filename.lower()),
+                    sample_captions["default"]
+                )
+                logger.info(f"Using fallback caption: {caption}")
         except Exception as e:
-            logger.error(f"Error generating caption: {e}")
+            logger.error(f"Error in caption generation flow: {e}")
             caption = sample_captions.get("default")
     else:
         # Use sample caption based on filename
@@ -220,8 +217,35 @@ def generate_caption():
         )
         logger.info(f"Using mock caption: {caption}")
 
-    # Save to MongoDB
-    db_id = save_to_mongodb(images_collection, cloudinary_url, caption, filename, "image")
+    # Upload to Cloudinary if available
+    try:
+        cloudinary_upload = cloudinary.uploader.upload(
+            file.stream,
+            public_id=filename,
+            folder="ai_media"
+        )
+        cloudinary_url = cloudinary_upload['secure_url']
+    except Exception as e:
+        logger.error(f"Error uploading to Cloudinary: {e}")
+        # Fallback to base64 encoding if Cloudinary fails
+        file.stream.seek(0)
+        image_data = file.stream.read()
+        cloudinary_url = f"data:image/{file.content_type.split('/')[-1]};base64,{base64.b64encode(image_data).decode('utf-8')}"
+
+    try:
+        # Save to MongoDB if available
+        if 'images_collection' in globals():
+            db_id = str(images_collection.insert_one({
+                "image_url": cloudinary_url,
+                "caption": caption,
+                "original_filename": filename,
+                "created_at": datetime.now()
+            }).inserted_id)
+        else:
+            db_id = None
+    except Exception as e:
+        logger.error(f"Error saving to database: {e}")
+        db_id = None
 
     return jsonify({
         'caption': caption,
@@ -417,6 +441,22 @@ def generate_animated_video():
         'videoUrl': video_url,
         'id': db_id
     })
+
+@app.route('/api/images', methods=['GET'])
+def get_images():
+    """Get all stored images"""
+    try:
+        if 'images_collection' in globals():
+            images = list(images_collection.find().sort("created_at", -1))
+            for image in images:
+                image['_id'] = str(image['_id'])
+            return jsonify(images)
+        else:
+            # Return empty array if MongoDB not connected
+            return jsonify([])
+    except Exception as e:
+        logger.error(f"Error fetching images: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000

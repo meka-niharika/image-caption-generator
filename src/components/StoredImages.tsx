@@ -40,6 +40,10 @@ const StoredImages = () => {
                   src={getImageUrl(image.image_url)}
                   alt={image.original_filename || "Generated Image"}
                   className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/placeholder.svg";
+                    console.error("Failed to load image:", image.image_url);
+                  }}
                 />
                 <div className="absolute bottom-0 left-0 w-full bg-black/60 text-white p-2 text-sm">
                   {image.caption.length > 50 ? `${image.caption.substring(0, 50)}...` : image.caption}
@@ -56,7 +60,15 @@ const StoredImages = () => {
         {selectedImage && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-2xl max-h-screen overflow-auto">
-              <img src={selectedImage.url} alt="Full Size" className="w-full rounded-md mb-4" />
+              <img 
+                src={selectedImage.url} 
+                alt="Full Size" 
+                className="w-full rounded-md mb-4" 
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder.svg";
+                  console.error("Failed to load fullsize image");
+                }}
+              />
               <p className="text-lg font-semibold mb-2">Caption:</p>
               <p className="text-gray-700 dark:text-gray-300">{selectedImage.caption}</p>
               <button

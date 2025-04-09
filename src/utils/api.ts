@@ -17,12 +17,12 @@ export const getApiBaseUrl = (): string => {
 // Image/Video URL helper to handle Cloudinary URLs or base64 images/videos
 export const getMediaUrl = (mediaData: string): string => {
   // If it's already a full URL (Cloudinary), return as is
-  if (mediaData.startsWith('http')) {
+  if (mediaData && mediaData.startsWith('http')) {
     return mediaData;
   }
   
   // For base64 data
-  return mediaData;
+  return mediaData || '';
 };
 
 // Added function to handle image URLs specifically
@@ -51,41 +51,40 @@ export const formatFileSize = (bytes: number): string => {
 
 // Helper to safely parse API responses
 export const parseApiResponse = async (response: Response) => {
-  const contentType = response.headers.get("content-type");
-  
   if (!response.ok) {
     let errorMessage = `Server error: ${response.status}`;
-    if (contentType && contentType.includes("application/json")) {
-      try {
+    try {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
         const errorData = await response.json();
         errorMessage = errorData.error || errorMessage;
-      } catch (e) {
-        console.error("Failed to parse error JSON:", e);
-      }
-    } else {
-      // If response is not JSON, try to get the text
-      try {
+      } else {
+        // Try to get text error if not JSON
         const errorText = await response.text();
         console.error("Non-JSON error response:", errorText);
         if (errorText && errorText.length < 100) {
           errorMessage = `Server error: ${errorText}`;
         }
-      } catch (e) {
-        console.error("Failed to get error text:", e);
       }
+    } catch (e) {
+      console.error("Failed to parse error response:", e);
     }
     throw new Error(errorMessage);
   }
   
-  // For successful responses
+  // First check if we have a JSON response
+  const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     try {
       return await response.json();
     } catch (e) {
-      console.error("Failed to parse JSON from successful response:", e);
+      console.error("Failed to parse JSON:", e);
+      const text = await response.text();
+      console.error("Raw response:", text);
       throw new Error("Server returned invalid JSON data");
     }
   } else {
+    // If not JSON, get the text content and log it
     const text = await response.text();
     console.error("Unexpected non-JSON response:", text);
     throw new Error("Server returned non-JSON data");

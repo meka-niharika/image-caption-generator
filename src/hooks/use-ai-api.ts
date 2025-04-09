@@ -1,6 +1,7 @@
+
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getApiBaseUrl, getMediaUrl, parseApiResponse } from "@/utils/api";
+import { getApiBaseUrl, parseApiResponse } from "@/utils/api";
 
 interface GenerateCaptionResponse {
   caption: string;
@@ -35,102 +36,77 @@ interface StoredImage {
 
 const apiBaseUrl = getApiBaseUrl();
 
-const apiGetStoredImages = async (): Promise<StoredImage[]> => {
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/images`, {
-      method: "GET",
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch stored images: ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching stored images:", error);
-    throw error;
-  }
-};
-
+// Function to get stored images - implementation for StoredImages component
 export const useStoredImages = () => {
   return useQuery({
     queryKey: ['stored-images'],
-    queryFn: apiGetStoredImages,
+    queryFn: async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/images`, {
+          method: "GET",
+        });
+        
+        return await parseApiResponse(response) as StoredImage[];
+      } catch (error) {
+        console.error("Error fetching stored images:", error);
+        throw error;
+      }
+    },
     retry: 1,
   });
 };
 
 const apiGenerateCaption = async (image: File): Promise<GenerateCaptionResponse> => {
-  try {
-    const formData = new FormData();
-    formData.append("image", image);
-    
-    const response = await fetch(`${apiBaseUrl}/api/generate-caption`, {
-      method: "POST",
-      body: formData,
-    });
-    
-    return await parseApiResponse(response);
-  } catch (error) {
-    console.error("Error generating caption:", error);
-    throw error;
-  }
+  const formData = new FormData();
+  formData.append("image", image);
+  
+  const response = await fetch(`${apiBaseUrl}/api/generate-caption`, {
+    method: "POST",
+    body: formData,
+  });
+  
+  return await parseApiResponse(response) as GenerateCaptionResponse;
 };
 
 const apiGenerateVideoCaption = async (video: File): Promise<GenerateVideoCaptionResponse> => {
-  try {
-    const formData = new FormData();
-    formData.append("video", video);
-    
-    const response = await fetch(`${apiBaseUrl}/api/generate-video-caption`, {
-      method: "POST",
-      body: formData,
-    });
-    
-    return await parseApiResponse(response);
-  } catch (error) {
-    console.error("Error generating video caption:", error);
-    throw error;
-  }
+  const formData = new FormData();
+  formData.append("video", video);
+  
+  const response = await fetch(`${apiBaseUrl}/api/generate-video-caption`, {
+    method: "POST",
+    body: formData,
+  });
+  
+  return await parseApiResponse(response) as GenerateVideoCaptionResponse;
 };
 
 const apiGenerateImage = async (caption: string): Promise<GenerateImageResponse> => {
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/generate-image`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ caption }),
-    });
-    
-    return await parseApiResponse(response);
-  } catch (error) {
-    console.error("Error generating image:", error);
-    throw error;
-  }
+  const response = await fetch(`${apiBaseUrl}/api/generate-image`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ caption }),
+  });
+  
+  return await parseApiResponse(response) as GenerateImageResponse;
 };
 
 const apiGenerateAnimatedVideo = async (caption: string, style: string = 'ghibli'): Promise<GenerateAnimatedVideoResponse> => {
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/generate-animated-video`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ caption, style }),
-    });
-    
-    return await parseApiResponse(response);
-  } catch (error) {
-    console.error("Error generating animated video:", error);
-    throw error;
-  }
+  const response = await fetch(`${apiBaseUrl}/api/generate-animated-video`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ caption, style }),
+  });
+  
+  return await parseApiResponse(response) as GenerateAnimatedVideoResponse;
 };
 
 export const useGenerateCaption = () => {
   return useMutation({
-    mutationFn: (image: File) => apiGenerateCaption(image),
+    mutationFn: apiGenerateCaption,
     onError: (error: Error) => {
       console.error("Error generating caption:", error);
       toast.error(`Failed to generate caption: ${error.message || "Unknown error"}`);
@@ -140,7 +116,7 @@ export const useGenerateCaption = () => {
 
 export const useGenerateVideoCaption = () => {
   return useMutation({
-    mutationFn: (video: File) => apiGenerateVideoCaption(video),
+    mutationFn: apiGenerateVideoCaption,
     onError: (error: Error) => {
       console.error("Error generating video caption:", error);
       toast.error(`Failed to analyze video: ${error.message || "Unknown error"}`);
@@ -150,7 +126,7 @@ export const useGenerateVideoCaption = () => {
 
 export const useGenerateImage = () => {
   return useMutation({
-    mutationFn: (caption: string) => apiGenerateImage(caption),
+    mutationFn: apiGenerateImage,
     onError: (error: Error) => {
       console.error("Error generating image:", error);
       toast.error(`Failed to generate image: ${error.message || "Unknown error"}`);
