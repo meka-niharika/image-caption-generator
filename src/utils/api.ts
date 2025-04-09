@@ -25,6 +25,11 @@ export const getMediaUrl = (mediaData: string): string => {
   return mediaData;
 };
 
+// Added function to handle image URLs specifically
+export const getImageUrl = (imageData: string): string => {
+  return getMediaUrl(imageData);
+};
+
 // Get media type (image or video)
 export const getMediaType = (file: File): 'image' | 'video' | null => {
   if (file.type.startsWith('image/')) {

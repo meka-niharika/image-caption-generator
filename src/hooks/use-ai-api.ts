@@ -1,4 +1,3 @@
-
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getApiBaseUrl, getMediaUrl } from "@/utils/api";
@@ -26,7 +25,42 @@ interface GenerateAnimatedVideoResponse {
   id?: string;
 }
 
+interface StoredImage {
+  _id: string;
+  image_url: string;
+  caption: string;
+  original_filename?: string;
+  created_at: string;
+}
+
 const apiBaseUrl = getApiBaseUrl();
+
+// Fetch stored images from the backend
+const apiGetStoredImages = async (): Promise<StoredImage[]> => {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/images`, {
+      method: "GET",
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stored images: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching stored images:", error);
+    throw error;
+  }
+};
+
+// Hook for fetching stored images
+export const useStoredImages = () => {
+  return useQuery({
+    queryKey: ['stored-images'],
+    queryFn: apiGetStoredImages,
+    retry: 1,
+  });
+};
 
 // Real API calls to our backend
 const apiGenerateCaption = async (image: File): Promise<GenerateCaptionResponse> => {

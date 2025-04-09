@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStoredImages } from "@/hooks/use-ai-api";
 import { getImageUrl } from "@/utils/api";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { ImageIcon } from "lucide-react"; // Removed `Image` import
+import { ImageIcon } from "lucide-react";
 
 const StoredImages = () => {
   const { data: images, isLoading, isError, error } = useStoredImages();
