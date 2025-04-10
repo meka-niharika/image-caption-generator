@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useStoredImages } from "@/hooks/use-ai-api";
 import { getImageUrl } from "@/utils/api";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, XCircle } from "lucide-react";
 
 const StoredImages = () => {
   const { data: images, isLoading, isError, error } = useStoredImages();
@@ -27,7 +27,9 @@ const StoredImages = () => {
             <LoadingSpinner text="Loading saved images..." />
           </div>
         ) : isError ? (
-          <div className="text-red-500">Error: {error.message}</div>
+          <div className="text-red-500 p-4 rounded-md bg-red-50 dark:bg-red-900/20">
+            <p className="font-medium">Error: {error.message}</p>
+          </div>
         ) : images && images.length > 0 ? (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {images.map((image) => (
@@ -52,14 +54,22 @@ const StoredImages = () => {
             ))}
           </div>
         ) : (
-          <div className="text-gray-500 dark:text-gray-400">
+          <div className="text-gray-500 dark:text-gray-400 p-8 text-center border border-dashed rounded-md">
             No images saved yet. Generate some images and they will appear here.
           </div>
         )}
 
         {selectedImage && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-2xl max-h-screen overflow-auto">
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-2xl max-h-[90vh] overflow-auto relative">
+              <button 
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <XCircle className="h-6 w-6" />
+                <span className="sr-only">Close</span>
+              </button>
+              
               <img 
                 src={selectedImage.url} 
                 alt="Full Size" 
@@ -69,14 +79,10 @@ const StoredImages = () => {
                   console.error("Failed to load fullsize image");
                 }}
               />
-              <p className="text-lg font-semibold mb-2">Caption:</p>
-              <p className="text-gray-700 dark:text-gray-300">{selectedImage.caption}</p>
-              <button
-                className="mt-4 bg-purple text-white rounded-md px-4 py-2 hover:bg-purple-dark"
-                onClick={() => setSelectedImage(null)}
-              >
-                Close
-              </button>
+              <div className="space-y-2">
+                <p className="text-lg font-semibold">Caption:</p>
+                <p className="text-gray-700 dark:text-gray-300">{selectedImage.caption}</p>
+              </div>
             </div>
           </div>
         )}

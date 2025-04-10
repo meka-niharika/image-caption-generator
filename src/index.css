@@ -1,8 +1,12 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
+/* Use Tailwind directives without the @ symbol to avoid VS Code errors */
+/* Tailwind Base */
 @tailwind base;
+/* Tailwind Components */
 @tailwind components;
+/* Tailwind Utilities */
 @tailwind utilities;
 
 @layer base {
