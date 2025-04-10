@@ -11,7 +11,7 @@ export const getApiBaseUrl = (): string => {
     // Railway: "https://your-app-name.railway.app"
     // Google Cloud Run: "https://image-caption-backend-xxxx-xx.a.run.app"
     // Heroku: "https://image-caption-backend.herokuapp.com"
-    return "https://YOUR-DEPLOYED-URL-HERE";
+    return "https://image-caption-generator-yh6d.onrender.com";
   }
   
   // For local development
