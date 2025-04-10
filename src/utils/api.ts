@@ -5,18 +5,18 @@
 export const getApiBaseUrl = (): string => {
   // When deployed on platforms like Render, use your deployed backend URL
   if ((import.meta as any).env.PROD) {
+    console.log("Running in production mode, using remote API");
     // Replace this with your actual deployed backend URL
-    // Examples based on platform:
-    // PythonAnywhere: "https://yourusername.pythonanywhere.com"
-    // Railway: "https://your-app-name.railway.app"
-    // Google Cloud Run: "https://image-caption-backend-xxxx-xx.a.run.app"
-    // Heroku: "https://image-caption-backend.herokuapp.com"
     return "https://image-caption-generator-yh6d.onrender.com";
   }
   
   // For local development
+  console.log("Running in development mode, using local API");
   return "http://localhost:5000";
 };
+
+// Log the API base URL for debugging
+console.log("API Base URL:", getApiBaseUrl());
 
 // Image/Video URL helper to handle Cloudinary URLs or base64 images/videos
 export const getMediaUrl = (mediaData: string): string => {
@@ -55,13 +55,19 @@ export const formatFileSize = (bytes: number): string => {
 
 // Helper to safely parse API responses
 export const parseApiResponse = async (response: Response) => {
+  console.log("API Response status:", response.status);
+  console.log("API Response headers:", Object.fromEntries([...response.headers.entries()]));
+  
   if (!response.ok) {
     let errorMessage = `Server error: ${response.status}`;
     try {
       const contentType = response.headers.get("content-type");
+      console.log("Error response content-type:", contentType);
+      
       if (contentType && contentType.includes("application/json")) {
         const errorData = await response.json();
         errorMessage = errorData.error || errorMessage;
+        console.error("JSON error response:", errorData);
       } else {
         // Try to get text error if not JSON
         const errorText = await response.text();
@@ -78,9 +84,13 @@ export const parseApiResponse = async (response: Response) => {
   
   // First check if we have a JSON response
   const contentType = response.headers.get("content-type");
+  console.log("Success response content-type:", contentType);
+  
   if (contentType && contentType.includes("application/json")) {
     try {
-      return await response.json();
+      const jsonData = await response.json();
+      console.log("API response data:", jsonData);
+      return jsonData;
     } catch (e) {
       console.error("Failed to parse JSON:", e);
       const text = await response.text();
@@ -92,5 +102,33 @@ export const parseApiResponse = async (response: Response) => {
     const text = await response.text();
     console.error("Unexpected non-JSON response:", text);
     throw new Error("Server returned non-JSON data");
+  }
+};
+
+// Create a simple function to test API connectivity
+export const testApiConnection = async (): Promise<boolean> => {
+  try {
+    const apiUrl = getApiBaseUrl();
+    console.log(`Testing connection to API at: ${apiUrl}`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const response = await fetch(`${apiUrl}/`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    console.log(`API connection test result: ${response.status} ${response.statusText}`);
+    return response.ok;
+  } catch (error) {
+    console.error('API connection test failed:', error);
+    return false;
   }
 };
