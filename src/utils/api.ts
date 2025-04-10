@@ -1,17 +1,15 @@
-
 /**
  * Get base URL for API calls based on environment
  */
 export const getApiBaseUrl = (): string => {
-  // When deployed on platforms like PythonAnywhere, use your deployed backend URL
+  // When deployed on platforms like Render, use your deployed backend URL
   if ((import.meta as any).env.PROD) {
-    // Replace this with your actual PythonAnywhere URL when deployed
-    // For example: "https://yourusername.pythonanywhere.com"
-    return ""; // Leave empty to use relative URLs which will work if frontend and backend are on same domain
+    // Replace this with your actual deployed backend URL when you have it
+    return "https://image-caption-backend.onrender.com";
   }
   
   // For local development
-  return "";
+  return "http://localhost:5000";
 };
 
 // Image/Video URL helper to handle Cloudinary URLs or base64 images/videos
