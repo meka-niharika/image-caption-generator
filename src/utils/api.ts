@@ -1,11 +1,17 @@
+
 /**
  * Get base URL for API calls based on environment
  */
 export const getApiBaseUrl = (): string => {
   // When deployed on platforms like Render, use your deployed backend URL
   if ((import.meta as any).env.PROD) {
-    // Replace this with your actual deployed backend URL when you have it
-    return "https://image-caption-backend.onrender.com";
+    // Replace this with your actual deployed backend URL
+    // Examples based on platform:
+    // PythonAnywhere: "https://yourusername.pythonanywhere.com"
+    // Railway: "https://your-app-name.railway.app"
+    // Google Cloud Run: "https://image-caption-backend-xxxx-xx.a.run.app"
+    // Heroku: "https://image-caption-backend.herokuapp.com"
+    return "https://YOUR-DEPLOYED-URL-HERE";
   }
   
   // For local development
