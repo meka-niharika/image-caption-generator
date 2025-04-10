@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
@@ -51,8 +52,9 @@ except Exception as e:
 os.makedirs('static/images', exist_ok=True)
 os.makedirs('static/videos', exist_ok=True)
 
-# Check if we should load the models based on environment - FORCE TO TRUE
-LOAD_AI_MODELS = True  # Changed from environment variable to force loading models
+# Check if we should load the models based on environment variable
+LOAD_AI_MODELS = os.environ.get('LOAD_AI_MODELS', 'false').lower() == 'true'
+logger.info(f"AI Models loading: {LOAD_AI_MODELS}")
 
 # Create mock responses for environments with memory constraints
 sample_captions = {
@@ -82,7 +84,7 @@ sample_video_summaries = {
     "default": "This video contains a sequence of scenes that demonstrate movement and visual interest across different contexts."
 }
 
-# Only load AI models if we're not in a memory-constrained environment
+# Only load AI models if specified in environment
 if LOAD_AI_MODELS:
     logger.info("Loading models... This may take time.")
     try:
@@ -106,7 +108,9 @@ if LOAD_AI_MODELS:
         logger.error(f"Error loading models: {e}")
         LOAD_AI_MODELS = False
 else:
-    logger.info("Skipping model loading due to memory constraints")
+    logger.info("Using mock data for development - AI models not loaded")
+
+# ... keep existing code (route definitions and API endpoints)
 
 @app.route('/')
 def index():
@@ -150,7 +154,7 @@ def save_to_mongodb(collection, media_url, caption, original_filename, media_typ
             return None
             
         media_data = {
-            "media_url": media_url,
+            "image_url" if media_type == "image" else "video_url": media_url,
             "caption": caption,
             "original_filename": original_filename,
             "media_type": media_type,
@@ -219,6 +223,7 @@ def generate_caption():
 
     # Upload to Cloudinary if available
     try:
+        file.stream.seek(0)
         cloudinary_upload = cloudinary.uploader.upload(
             file.stream,
             public_id=filename,
@@ -336,6 +341,7 @@ def generate_image():
             
             # Save temporarily
             temp_path = os.path.join('uploads', f"generated_{int(time.time())}.png")
+            os.makedirs('uploads', exist_ok=True)
             generated_image.save(temp_path, format="PNG")
             
             # Upload to Cloudinary
@@ -461,4 +467,4 @@ def get_images():
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)

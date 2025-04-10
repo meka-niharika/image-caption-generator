@@ -1,0 +1,15 @@
+
+{
+  "name": "image-caption-backend",
+  "version": "1.0.0",
+  "description": "Backend for AI image caption generator",
+  "main": "app.py",
+  "scripts": {
+    "start": "python app.py",
+    "dev": "python -m dotenv.cli -f .env.dev run python app.py",
+    "start:prod": "python -m dotenv.cli -f .env run python app.py"
+  },
+  "dependencies": {
+    "dotenv-cli": "^7.3.0"
+  }
+}
