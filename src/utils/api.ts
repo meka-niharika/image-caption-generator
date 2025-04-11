@@ -111,10 +111,11 @@ export const testApiConnection = async (): Promise<boolean> => {
     const apiUrl = getApiBaseUrl();
     console.log(`Testing connection to API at: ${apiUrl}`);
     
+    // Use a shorter timeout for faster feedback
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     
-    const response = await fetch(`${apiUrl}/`, {
+    const response = await fetch(`${apiUrl}/health`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -124,6 +125,25 @@ export const testApiConnection = async (): Promise<boolean> => {
     });
     
     clearTimeout(timeoutId);
+    
+    // Also try the root path if /health fails
+    if (!response.ok) {
+      const rootController = new AbortController();
+      const rootTimeoutId = setTimeout(() => rootController.abort(), 5000);
+      
+      const rootResponse = await fetch(`${apiUrl}/`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        signal: rootController.signal
+      });
+      
+      clearTimeout(rootTimeoutId);
+      console.log(`Root path test result: ${rootResponse.status} ${rootResponse.statusText}`);
+      return rootResponse.ok;
+    }
     
     console.log(`API connection test result: ${response.status} ${response.statusText}`);
     return response.ok;
