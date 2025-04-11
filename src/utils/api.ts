@@ -1,3 +1,4 @@
+
 /**
  * Get base URL for API calls based on environment
  */
@@ -5,7 +6,6 @@ export const getApiBaseUrl = (): string => {
   // When deployed on platforms like Render, use your deployed backend URL
   if ((import.meta as any).env.PROD) {
     console.log("Running in production mode, using remote API");
-    // Replace this with your actual deployed backend URL
     return "https://image-caption-backend.onrender.com";
   }
   

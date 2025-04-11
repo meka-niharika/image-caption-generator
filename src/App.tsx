@@ -62,12 +62,12 @@ const AppContent = () => {
           <p className="text-gray-600">{connectionError}</p>
           <p className="text-sm">
             The application can't connect to the backend server. This might be because:
-            <ul className="list-disc text-left pl-5 mt-2">
-              <li>The backend server is not running</li>
-              <li>The backend URL is incorrect</li>
-              <li>There's a network issue</li>
-            </ul>
           </p>
+          <ul className="list-disc text-left pl-5 mt-2">
+            <li>The backend server is not running</li>
+            <li>The backend URL is incorrect</li>
+            <li>There's a network issue</li>
+          </ul>
           <Button 
             onClick={() => window.location.reload()} 
             className="mt-4"
